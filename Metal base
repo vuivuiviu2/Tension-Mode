@@ -1,0 +1,150 @@
+coroutine.wrap(function()
+    local Players = game:GetService("Players")
+    local SoundService = game:GetService("SoundService")
+    local Workspace = game:GetService("Workspace")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+    -- Âm thanh dưới nước (mềm)
+    local function applyUnderwaterSound(sound)
+        if sound:IsA("Sound") and not sound:GetAttribute("UnderwaterAdjusted") then
+            sound.PlaybackSpeed = math.clamp(sound.PlaybackSpeed * 0.9, 0.4, 1)
+            sound.Volume = math.clamp(sound.Volume * 0.75, 0, 1)
+            sound:SetAttribute("UnderwaterAdjusted", true)
+        end
+    end
+
+    for _, s in ipairs(Workspace:GetDescendants()) do applyUnderwaterSound(s) end
+    for _, s in ipairs(SoundService:GetDescendants()) do applyUnderwaterSound(s) end
+
+    Workspace.DescendantAdded:Connect(function(d)
+        task.defer(function()
+            if d:IsA("Sound") then wait(0.05) applyUnderwaterSound(d) end
+        end)
+    end)
+    SoundService.DescendantAdded:Connect(function(d)
+        task.defer(function()
+            if d:IsA("Sound") then wait(0.05) applyUnderwaterSound(d) end
+        end)
+    end)
+
+    print("✅ Âm thanh Underwater đã bật.")
+
+    local latestRoom = ReplicatedStorage:WaitForChild("GameData"):WaitForChild("LatestRoom")
+    local lastRoom = nil
+
+    latestRoom:GetPropertyChangedSignal("Value"):Connect(function()
+        if latestRoom.Value == lastRoom then return end
+        lastRoom = latestRoom.Value
+
+        local room = Workspace.CurrentRooms:FindFirstChild(tostring(lastRoom))
+        if not room then return end
+        local assets = room:FindFirstChild("Assets")
+        if not assets then return end
+
+        -- Thay âm thanh tủ
+        for _, obj in pairs(assets:GetChildren()) do
+            if obj.Name:lower():find("wardrobe") or obj.Name:lower():find("closet") then
+                local soundEnter = obj:FindFirstChild("SoundEnter", true)
+                local soundExit = obj:FindFirstChild("SoundExit", true)
+
+                if soundEnter and soundEnter:IsA("Sound") then
+                    soundEnter.SoundId = "rbxassetid://135029458937884"
+                    soundEnter.Volume = 1
+                    print("✅ Đã thay âm thanh MỞ TỦ:", soundEnter.SoundId)
+                end
+
+                if soundExit and soundExit:IsA("Sound") then
+                    soundExit.SoundId = "rbxassetid://102214699956179"
+                    soundExit.Volume = 1
+                    print("✅ Đã thay âm thanh RA KHỎI TỦ:", soundExit.SoundId)
+                end
+            end
+        end
+
+        -- Màu & vật liệu
+        local colorGo = Color3.fromRGB(128, 128, 128)
+        local colorWall = Color3.fromRGB(90, 90, 90)
+        local colorWallStrip = Color3.fromRGB(60, 60, 60)
+        local colorDoor = Color3.fromRGB(75, 75, 75)
+        local colorTuTron = Color3.fromRGB(110, 110, 110)
+        local colorKhac = Color3.fromRGB(40, 40, 40)
+        local colorNeon = Color3.fromRGB(100, 200, 255)
+        local colorNeonUnderDoor = Color3.new(0, 0, 0)
+
+        local excludedKeywords = {
+            "rush", "ambush", "seek", "figure", "eyes", "snare", "entity",
+            "crucifix", "key", "flashlight", "lighter", "tablet", "scanner"
+        }
+
+        local function isPlayerPart(part)
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character and part:IsDescendantOf(p.Character) then return true end
+            end
+            return false
+        end
+
+        local function isExcludedByName(name)
+            name = name:lower()
+            for _, keyword in ipairs(excludedKeywords) do
+                if name:find(keyword) then return true end
+            end
+            return false
+        end
+
+        local function match(name, keyword)
+            return string.lower(name) == string.lower(keyword)
+        end
+
+        local function applyMaterial(part, mat, color)
+            part.Material = mat
+            part.Color = color
+        end
+
+        for _, obj in ipairs(room:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                local name = obj.Name
+                local material = obj.Material
+
+                if isPlayerPart(obj) then continue end
+                if isExcludedByName(name) then continue end
+
+                if material == Enum.Material.Neon then
+                    local parent = obj.Parent
+                    if parent and tostring(parent):lower():find("door") then
+                        obj.Color = colorNeonUnderDoor
+                    else
+                        obj.Color = colorNeon
+                    end
+                elseif match(name, "Wall Strip") then
+                    applyMaterial(obj, Enum.Material.Metal, colorWallStrip)
+                elseif match(name, "Wall") then
+                    applyMaterial(obj, Enum.Material.DiamondPlate, colorWall)
+                elseif match(name, "Wood") then
+                    applyMaterial(obj, Enum.Material.Metal, colorGo)
+                elseif match(name, "Door") then
+                    applyMaterial(obj, Enum.Material.DiamondPlate, colorDoor)
+                else
+                    applyMaterial(obj, Enum.Material.Metal, colorKhac)
+                end
+            elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+                obj.Color = Color3.new(1, 1, 1)
+            end
+        end
+
+        for _, model in ipairs(room:GetDescendants()) do
+            if model:IsA("Model") and (model.Name:lower():find("wardrobe") or model.Name:lower():find("closet")) then
+                for _, part in ipairs(model:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        applyMaterial(part, Enum.Material.DiamondPlate, colorTuTron)
+                    end
+                end
+            end
+        end
+
+        -- Hiệu ứng âm thanh môi trường
+        pcall(function()
+            SoundService.DopplerScale = 0.2
+            SoundService.DistanceFactor = 2
+        end)
+    end)
+end)()
