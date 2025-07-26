@@ -1,0 +1,38 @@
+--====== Load script vật liệu Water Mode từ GitHub ======--
+loadstring(game:HttpGet("https://raw.githubusercontent.com/vuivuiviu2/Tension-Mode/main/Metal%20base"))()
+
+--====== Hiệu ứng ánh sáng dưới nước - phiên bản sâu, đậm, dễ nhìn và tối ưu hơn ======--
+local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
+
+Lighting.FogColor = Color3.fromRGB(60, 90, 130) -- màu nước đậm dễ nhìn
+Lighting.FogStart = 0
+Lighting.FogEnd = 120 -- nước sâu, vẫn đủ tầm nhìn
+Lighting.Ambient = Color3.fromRGB(50, 70, 120)
+Lighting.OutdoorAmbient = Color3.fromRGB(40, 70, 110)
+Lighting.Brightness = 1.1
+Lighting.ClockTime = 13.25
+
+--====== Muffle âm thanh dưới nước (hiệu quả, giảm lag) ======--
+local function applyMuffle(sound)
+	if sound:IsA("Sound") and not sound:GetAttribute("UnderwaterAdjusted") then
+		local muffle = Instance.new("EqualizerSoundEffect")
+		muffle.Name = "UnderwaterMuffle"
+		muffle.LowGain = -2
+		muffle.MidGain = -15
+		muffle.HighGain = -20
+		muffle.Parent = sound
+		sound:SetAttribute("UnderwaterAdjusted", true)
+	end
+end
+
+for _, snd in ipairs(workspace:GetDescendants()) do
+	applyMuffle(snd)
+end
+
+for _, snd in ipairs(SoundService:GetDescendants()) do
+	applyMuffle(snd)
+end
+
+workspace.DescendantAdded:Connect(applyMuffle)
+SoundService.DescendantAdded:Connect(applyMuffle)
