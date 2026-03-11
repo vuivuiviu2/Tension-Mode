@@ -1,0 +1,70 @@
+local lighting = game:GetService("Lighting")
+local player = game.Players.LocalPlayer
+
+lighting.FogColor = Color3.fromRGB(255,255,255)
+lighting.FogStart = 100000
+lighting.FogEnd = 100000
+
+local mainGameModule = player.PlayerGui:WaitForChild("MainUI",10):WaitForChild("Initiator",10):FindFirstChild("Main_Game")
+local chatService = game:GetService("TextChatService")
+local channel = chatService.TextChannels:FindFirstChild("RBXGeneral")
+
+local function showCaptionAndChat(captionText, chatText)
+    if mainGameModule then
+        local success, mainGame = pcall(require, mainGameModule)
+        if success and mainGame and mainGame.caption then
+            mainGame.caption("<font color='#8A2BE2'>"..captionText.."</font>", true)
+        end
+    end
+
+    if channel then
+        channel:DisplaySystemMessage("<font color='#8A2BE2'>"..chatText.."</font>")
+    end
+end
+
+showCaptionAndChat("NTz Nightmare Mode Loaded Successfully.", "NTz: Thanks for playing NTz Nightmare Mode")
+task.wait(5)
+showCaptionAndChat(":)", "NTz: Tài gey")
+task.wait(5)
+showCaptionAndChat("Have fun 👍", "Good Luck")
+
+local hasRun = false
+
+local function runNightmare()
+    if hasRun then return end
+    hasRun = true
+
+    local success1, err1 = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/vuivuiviu2/NTzR1SE-Script-/refs/heads/main/Thucthe"))()
+    end)
+
+    if success1 then
+        showCaptionAndChat("NTz Nightmare Mode 💀👍", "NTz Nightmare Mode 💀👍")
+    else
+        warn("Load Thuctheeee failed:", err1)
+    end
+
+    local success2, err2 = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/vuivuiviu2/NTZ/refs/heads/main/Vui.txt"))()
+    end)
+
+    if success2 then
+        print("Crucifix good")
+    else
+        warn("Load Vui.txt failed:", err2)
+    end
+end
+
+local latestRoom = game.ReplicatedStorage:WaitForChild("GameData"):WaitForChild("LatestRoom")
+
+if latestRoom.Value >= 1 then
+    runNightmare()
+end
+
+local connection
+connection = latestRoom.Changed:Connect(function()
+    if latestRoom.Value >= 1 then
+        runNightmare()
+        connection:Disconnect()
+    end
+end)
